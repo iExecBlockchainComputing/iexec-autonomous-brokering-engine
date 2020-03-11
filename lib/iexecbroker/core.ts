@@ -48,7 +48,7 @@ export default class Core extends IexecOrderFetcher
 				"invalid requestorder signature"
 			);
 
-			while (requestorder.volume < await this.contract.viewConsumed(requestorderhash))
+			while (requestorder.volume > await this.contract.viewConsumed(requestorderhash))
 			{
 				console.log(`[${requestorderhash}] fetching compatible orders`)
 				let apporder:        types.AppOrder        = await this.getCompatibleAppOrder(requestorder);
