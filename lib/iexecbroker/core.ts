@@ -56,7 +56,7 @@ export default class Core extends IexecOrderFetcher
 				let workerpoolorder: types.WorkerpoolOrder = await this.getCompatibleWorkerpoolOrder(requestorder);
 
 				console.log(`[${requestorderhash}] sending match to core`)
-				await this.contract.matchOrders(apporder, datasetorder, workerpoolorder, requestorder);
+				await (await this.contract.matchOrders(apporder, datasetorder, workerpoolorder, requestorder)).wait();
 			}
 			console.log(`[${requestorderhash}] matching success`)
 		}
