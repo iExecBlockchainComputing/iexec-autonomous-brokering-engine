@@ -4,6 +4,24 @@
   "description": "",
   "author": "Hadrien Croubois <hv@iex.ec>",
   "license": "Apache-2.0",
+	"repository": {
+    "type": "git",
+    "url": "git+https://github.com/iExecBlockchainComputing/iexec-brokering-daemon.git"
+  },
+  "bugs": {
+    "url": "https://github.com/iExecBlockchainComputing/iexec-brokering-daemon.git/issues"
+  },
+  "files": [
+    "/lib",
+    "/dist",
+		"tsconfig.json"
+  ],
+	"scripts": {
+		"build": "tsc",
+		"start": "node dist/main.js",
+		"trigger": "node dist/trigger.js",
+		"clean": "rm -rf dist"
+	},
   "dependencies": {
     "@iexec/interface": "^3.0.35-8",
     "@types/node": "^13.9.0",
