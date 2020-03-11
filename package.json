@@ -1,0 +1,14 @@
+{
+  "name": "iexec-broker-daemon",
+  "version": "0.0.1",
+  "description": "",
+  "author": "Hadrien Croubois <hv@iex.ec>",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@iexec/interface": "^3.0.35-8",
+    "@types/node": "^13.9.0",
+    "eth-sig-util": "^2.5.2",
+    "ethers": "^4.0.45",
+    "iexec": "^4.0.3"
+  }
+}
