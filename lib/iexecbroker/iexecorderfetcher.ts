@@ -2,7 +2,7 @@ import { ethers       } from 'ethers';
 import { IExec, utils } from 'iexec';
 import * as types       from './utils/types';
 
-export class WithIexec
+export class IexecOrderFetcher
 {
 	iexec: IExec;
 
