@@ -4,11 +4,7 @@ import { WithIexec      } from './withiexec';
 import * as utils         from './utils';
 import * as types         from './utils/types';
 
-// V3
 const IexecClerk = require('../../node_modules/@iexec/interface/build/contracts/IexecClerkInterface.json');
-// V5
-// const IexecInterface = require('/home/amxx/Work/iExec/code/PoCo-dev/build/contracts-min/IexecInterfaceToken.json');
-// const IERC1271       = require('/home/amxx/Work/iExec/code/PoCo-dev/build/contracts-min/IERC1271.json');
 
 export default class Core extends WithIexec
 {
@@ -24,20 +20,16 @@ export default class Core extends WithIexec
 	{
 		super(network, chainId);
 		this.contract = new ethers.Contract(address, IexecClerk.abi, signer);
-		// this.contract = new ethers.Contract(address, IexecInterface.abi, signer);
 	}
 
 	async launch() : Promise<void>
 	{
-		// V3
 		this.domain = types.toERC712Domain({
 			name:              "iExecODB",
 			version:           "3.0-alpha",
 			chainId:           this.iexec.network.id,
 			verifyingContract: await this.contract.provider.resolveName(this.contract.address),
 		});
-		// V5
-		// this.domain = types.toERC712Domain(await this.contract.domain());
 
 		console.log(`[ Starting event listener ]`);
 		this.contract.on(
@@ -51,7 +43,6 @@ export default class Core extends WithIexec
 	{
 		let requestorder     = types.toRequestOrder(raw);
 		let requestorderhash = this.hashRequestOrder(requestorder)
-
 		try
 		{
 			console.log(`[${requestorderhash}] checking signature`)
@@ -60,7 +51,7 @@ export default class Core extends WithIexec
 				"invalid requestorder signature"
 			);
 
-			while (requestorder.volume < await this.contract.viewConsumed(requestorderhash))
+			while (requestorder.volume > await this.contract.viewConsumed(requestorderhash))
 			{
 				console.log(`[${requestorderhash}] fetching compatible orders`)
 				let apporder:        types.AppOrder        = await this.getCompatibleAppOrder(requestorder);
@@ -68,7 +59,7 @@ export default class Core extends WithIexec
 				let workerpoolorder: types.WorkerpoolOrder = await this.getCompatibleWorkerpoolOrder(requestorder);
 
 				console.log(`[${requestorderhash}] sending match to core`)
-				await this.contract.matchOrders(apporder, datasetorder, workerpoolorder, requestorder);
+				await (await this.contract.matchOrders(apporder, datasetorder, workerpoolorder, requestorder)).wait();
 			}
 			console.log(`[${requestorderhash}] matching success`)
 		}
@@ -90,10 +81,7 @@ export default class Core extends WithIexec
 
 	async checkPresignature(identity: string, hash: string): Promise<boolean>
 	{
-		// V3
 		return await this.contract.viewPresigned(hash);
-		// V5
-		// return identity == await this.contract.viewPresigned(hash);
 	}
 
 	async checkSignature(identity: string, hash: string, sign: string) : Promise<boolean>
@@ -116,10 +104,8 @@ export default class Core extends WithIexec
 		}
 		else
 		{
-			// V3
-			return false;
-			// V5
-			// return "0x20c13b0b" == await (new ethers.Contract(identity, IERC1271.abi, this.contract.provider)).isValidSignature(hash, sign);
+			return false; // TODO: old ERC1271
+			// return await (new ethers.Contract(identity, IERC1271.abi, this.contract.provider)).isValidSignature(hash, sign);
 		}
 	}
 }

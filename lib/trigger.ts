@@ -1,9 +1,6 @@
 import { ethers } from 'ethers';
 
-// V3
 const IexecClerk = require('../node_modules/@iexec/interface/build/contracts/IexecClerkInterface.json');
-// V5
-// const IexecInterface = require('/home/amxx/Work/iExec/code/PoCo-dev/build/contracts-min/IexecInterfaceToken.json');
 
 (async () => {
 
@@ -31,10 +28,7 @@ const IexecClerk = require('../node_modules/@iexec/interface/build/contracts/Iex
 		salt:               ethers.utils.hexlify(ethers.utils.randomBytes(32)),
 		sign:               "0x",
 	}
-	// V3
 	await contract.signRequestOrder(ro);
-	// V5
-	// await contract.manageRequestOrder({ order: ro, operation: 0, sign: "0x" });
 	await contract.broadcastRequestOrder(ro);
 
 })().catch(console.error);
