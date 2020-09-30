@@ -4,11 +4,19 @@ import * as types       from './utils/types';
 
 export class IexecOrderFetcher
 {
-	iexec: IExec;
+	iexec:          IExec;
+	iexecAsPromise: Promise<IExec>
 
-	constructor(ethProvider: string, chainId: number)
+	constructor(ethProvider: ethers.Signer)
 	{
-		this.iexec = new IExec({ ethProvider, chainId });
+		this.iexecAsPromise = new Promise((resolve, reject) => {
+			ethProvider.getChainId()
+			.then(chainId => {
+				this.iexec = new IExec({ ethProvider, chainId });
+				resolve(this.iexec);
+			})
+			.catch(reject);
+		});
 	}
 
 	async getCompatibleAppOrder(requestorder: types.RequestOrder): Promise<types.AppOrder>

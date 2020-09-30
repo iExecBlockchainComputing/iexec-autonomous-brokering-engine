@@ -1,17 +1,23 @@
 import { ethers } from 'ethers';
-
+import { utils  } from 'iexec';
 const IexecInterface = require('/home/amxx/Work/iExec/code/PoCo-dev/build/contracts-min/IexecInterfaceToken.json');
 
-(async () => {
 
-	let network:     string          = "goerli";
-	let address:     string          = "core.v5.iexec.eth";
-	let private_key: string          = process.env.MNEMONIC;
-	let wallet:      ethers.Wallet   = new ethers.Wallet(private_key, ethers.getDefaultProvider(network));
-	let contract:    ethers.Contract = new ethers.Contract(address, IexecInterface.abi, wallet)
+
+// ------------[ Configuration - Begin ]------------
+const network:    string = "goerli";
+const address:    string = "core.v5.iexec.eth";
+const privatekey: string = process.env.MNEMONIC;
+// ------------[  Configuration - End  ]------------
+
+
+
+(async () => {
+	let wallet:   ethers.Wallet   = utils.getSignerFromPrivateKey(network, privatekey);
+	let contract: ethers.Contract = new ethers.Contract(address, IexecInterface.abi, wallet);
 
 	let ro = {
-		app:                "0xf0120Bb2b49A41017bFB3B08C6BBbEc1e7711DBc",
+		app:                "0x18De0518FEa922D376596b1Ad2a1f62F3981BE35",
 		appmaxprice:        0,
 		dataset:            ethers.constants.AddressZero,
 		datasetmaxprice:    0,
@@ -20,15 +26,21 @@ const IexecInterface = require('/home/amxx/Work/iExec/code/PoCo-dev/build/contra
 		requester:          wallet.address,
 		volume:             1,
 		tag:                ethers.constants.HashZero,
-		category:           2,
+		category:           0,
 		trust:              0,
 		beneficiary:        ethers.constants.AddressZero,
 		callback:           ethers.constants.AddressZero,
-		params:             "fac0",
+		params:             "autonomous brokering engine tester",
 		salt:               ethers.utils.hexlify(ethers.utils.randomBytes(32)),
 		sign:               "0x",
 	}
-	await contract.manageRequestOrder({ order: ro, operation: 0, sign: "0x" });
-	await contract.broadcastRequestOrder(ro);
 
+	console.log(JSON.stringify(ro))
+
+	await (await contract.manageRequestOrder({ order: ro, operation: 0, sign: "0x" })).wait();
+
+	if (process.env.BROADCAST)
+	{
+		await (await contract.broadcastRequestOrder(ro)).wait();
+	}
 })().catch(console.error);

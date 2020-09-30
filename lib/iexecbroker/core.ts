@@ -1,32 +1,44 @@
-import { ethers            } from 'ethers';
-import { TypedDataUtils    } from 'eth-sig-util';
-import { IexecOrderFetcher } from './iexecorderfetcher';
-import * as utils            from './utils';
-import * as types            from './utils/types';
+import { ethers                       } from 'ethers';
+import { TypedMessage, TypedDataUtils } from 'eth-sig-util';
+import { IexecOrderFetcher            } from './iexecorderfetcher';
+import * as utils                       from './utils';
+import * as types                       from './utils/types';
 
 const IexecInterface = require('/home/amxx/Work/iExec/code/PoCo-dev/build/contracts-min/IexecInterfaceToken.json');
-const IERC1271       = require('/home/amxx/Work/iExec/code/PoCo-dev/build/contracts-min/IERC1271.json');
+const IERC1654       = require('/home/amxx/Work/iExec/code/PoCo-dev/build/contracts-min/IERC1654.json');
 
 export default class Core extends IexecOrderFetcher
 {
-	contract: ethers.Contract;
-	domain:   types.ERC712Domain;
+	contract:        ethers.Contract;
+	domain:          types.ERC712Domain;
+	domainAsPromise: Promise<types.ERC712Domain>;
 
 	constructor(
-		network: string,
-		chainId: number,
 		signer:  ethers.Signer,
-		address: string = "core.v5.iexec.eth",
+		address: string = 'core.v5.iexec.eth',
 	)
 	{
-		super(network, chainId);
+		super(signer);
 		this.contract = new ethers.Contract(address, IexecInterface.abi, signer);
+		this.domainAsPromise = new Promise((resolve, reject) => {
+			this.contract.domain()
+			.then(domain => {
+				this.domain = types.toERC712Domain(domain);
+				resolve(this.domain);
+			})
+			.catch(reject);
+		});
 	}
 
-	async launch() : Promise<void>
+	async ready() : Promise<void>
 	{
-		this.domain = types.toERC712Domain(await this.contract.domain());
+		await this.iexecAsPromise;
+		await this.domainAsPromise;
+	}
 
+	async listen() : Promise<void>
+	{
+		await this.ready()
 		console.log(`[ Starting event listener ]`);
 		this.contract.on(
 			this.contract.filters.BroadcastRequestOrder(),
@@ -43,9 +55,15 @@ export default class Core extends IexecOrderFetcher
 		try
 		{
 			console.log(`[${requestorderhash}] checking signature`)
+
 			utils.require(
-				(await this.checkPresignature(requestorder.requester, requestorderhash)) || (await this.checkSignatureWithERC1271(requestorder.requester, requestorderhash, requestorder.sign)),
-				"invalid requestorder signature"
+				requestorder.requester != ethers.constants.AddressZero,
+				'missing requester'
+			);
+
+			utils.require(
+				(await this.checkPresignature(requestorder.requester, requestorderhash)) || (await this.checkSignatureWithDelegation(requestorder.requester, requestorderhash, requestorder.sign)),
+				'invalid requestorder signature'
 			);
 
 			while (requestorder.volume > await this.contract.viewConsumed(requestorderhash))
@@ -54,6 +72,10 @@ export default class Core extends IexecOrderFetcher
 				let apporder:        types.AppOrder        = await this.getCompatibleAppOrder(requestorder);
 				let datasetorder:    types.DatasetOrder    = await this.getCompatibleDatasetOrder(requestorder);
 				let workerpoolorder: types.WorkerpoolOrder = await this.getCompatibleWorkerpoolOrder(requestorder);
+
+				utils.require(Boolean(apporder),        'no compatible apporder found');
+				utils.require(Boolean(datasetorder),    'no compatible datasetorder found');
+				utils.require(Boolean(workerpoolorder), 'no compatible workerpoolorder found');
 
 				console.log(`[${requestorderhash}] sending match to core`)
 				await (await this.contract.matchOrders(apporder, datasetorder, workerpoolorder, requestorder)).wait();
@@ -68,12 +90,12 @@ export default class Core extends IexecOrderFetcher
 
 	hashRequestOrder(requestorder): string
 	{
-		return '0x'+TypedDataUtils.sign({
+		return ethers.utils.hexlify(TypedDataUtils.sign({
 			types:       types.TYPES,
 			primaryType: 'RequestOrder',
 			domain:      this.domain,
 			message:     requestorder,
-		}).toString("hex");
+		} as TypedMessage<any>))
 	}
 
 	async checkPresignature(identity: string, hash: string): Promise<boolean>
@@ -93,15 +115,20 @@ export default class Core extends IexecOrderFetcher
 		}
 	}
 
-	async checkSignatureWithERC1271(identity: string, hash: string, sign: string): Promise<boolean>
+	async checkSignatureWithDelegation(identity: string, hash: string, sign: string): Promise<boolean>
 	{
 		if (await this.checkSignature(identity, hash, sign))
 		{
 			return true;
 		}
-		else
+		try
 		{
-			return "0x20c13b0b" == await (new ethers.Contract(identity, IERC1271.abi, this.contract.provider)).isValidSignature(hash, sign);
+			const identityContract: ethers.Contract = new ethers.Contract(identity, IERC1654.abi, this.contract.provider);
+			return identityContract.interface.getSighash('isValidSignature(bytes32,bytes)') == await identityContract.isValidSignature(hash, sign);
+		}
+		catch
+		{
+			return false;
 		}
 	}
 }
