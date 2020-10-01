@@ -1,0 +1,12 @@
+version: '3'
+services:
+  autonomous-brokering-engine:
+    build:
+      context: .
+    ports:
+      - 3000:3000
+    environment:
+      # CHAIN: 'goerli'
+      CHAIN: 'https://rpcgoerli2w7wagudqhtw5khzsdtv.iex.ec/'
+      MNEMONIC: ${MNEMONIC1}
+      PORT: 3000

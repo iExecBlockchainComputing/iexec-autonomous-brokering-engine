@@ -4,8 +4,8 @@ import { IexecOrderFetcher            } from './iexecorderfetcher';
 import * as utils                       from './utils';
 import * as types                       from './utils/types';
 
-const IexecInterface = require('/home/amxx/Work/iExec/code/PoCo-dev/build/contracts-min/IexecInterfaceToken.json');
-const IERC1654       = require('/home/amxx/Work/iExec/code/PoCo-dev/build/contracts-min/IERC1654.json');
+const IexecInterface = require('@iexec/poco/build/contracts-min/IexecInterfaceToken.json');
+const IERC1654       = require('@iexec/poco/build/contracts-min/IERC1654.json');
 
 export default class Core extends IexecOrderFetcher
 {
