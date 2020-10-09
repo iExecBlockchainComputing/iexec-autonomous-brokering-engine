@@ -6,7 +6,6 @@ services:
     ports:
       - 3000:3000
     environment:
-      # CHAIN: 'goerli'
-      CHAIN: 'https://rpcgoerli2w7wagudqhtw5khzsdtv.iex.ec/'
-      MNEMONIC: ${MNEMONIC1}
+      CHAIN: ${NODE}
+      MNEMONIC: ${MNEMONIC}
       PORT: 3000
