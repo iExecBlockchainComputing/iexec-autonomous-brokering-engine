@@ -35,7 +35,12 @@ const privatekey: string = process.env.MNEMONIC;
 		try
 		{
 			service.trigger(req.body)
-			res.json({ result: true })
+			.then(dealids => res.json({
+				result: { success: true, dealids }
+			}))
+			.catch(error => res.json({
+				error
+			}))
 		}
 		catch (error)
 		{

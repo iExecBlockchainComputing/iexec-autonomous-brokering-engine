@@ -47,14 +47,15 @@ export default class Core extends IexecOrderFetcher
 		console.log(`[    Daemon is running    ]`);
 	}
 
-	async trigger(raw) : Promise<void>
+	async trigger(raw) : Promise<string[]>
 	{
-		let requestorder     = types.toRequestOrder(raw);
-		let requestorderhash = this.hashRequestOrder(requestorder)
+		let dealids : string[] = [];
 
+		let requestorder     = types.toRequestOrder(raw);
+		let requestorderhash = this.hashRequestOrder(requestorder);
 		try
 		{
-			console.log(`[${requestorderhash}] checking signature`)
+			console.log(`[${requestorderhash}] checking signature`);
 
 			utils.require(
 				requestorder.requester != ethers.constants.AddressZero,
@@ -68,7 +69,7 @@ export default class Core extends IexecOrderFetcher
 
 			while (requestorder.volume > await this.contract.viewConsumed(requestorderhash))
 			{
-				console.log(`[${requestorderhash}] fetching compatible orders`)
+				console.log(`[${requestorderhash}] fetching compatible orders`);
 				let apporder:        types.AppOrder        = await this.getCompatibleAppOrder(requestorder);
 				let datasetorder:    types.DatasetOrder    = await this.getCompatibleDatasetOrder(requestorder);
 				let workerpoolorder: types.WorkerpoolOrder = await this.getCompatibleWorkerpoolOrder(requestorder);
@@ -77,15 +78,18 @@ export default class Core extends IexecOrderFetcher
 				utils.require(Boolean(datasetorder),    'no compatible datasetorder found');
 				utils.require(Boolean(workerpoolorder), 'no compatible workerpoolorder found');
 
-				console.log(`[${requestorderhash}] sending match to core`)
-				await (await this.contract.matchOrders(apporder, datasetorder, workerpoolorder, requestorder)).wait();
+				console.log(`[${requestorderhash}] sending match to core`);
+				const { events } = await (await this.contract.matchOrders(apporder, datasetorder, workerpoolorder, requestorder)).wait();
+				dealids = dealids.concat(events.filter(({ event }) => event == 'OrdersMatched').map(({ args }) => args[0]));
 			}
-			console.log(`[${requestorderhash}] matching success`)
+			console.log(`[${requestorderhash}] matching success`);
 		}
 		catch (e)
 		{
 			console.log(`[${requestorderhash}] ${e}`)
 		}
+
+		return dealids;
 	}
 
 	hashRequestOrder(requestorder): string

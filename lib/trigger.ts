@@ -5,8 +5,8 @@ const IexecInterface = require('/home/amxx/Work/iExec/code/PoCo-dev/build/contra
 
 
 // ------------[ Configuration - Begin ]------------
-const network:    string = "goerli";
-const address:    string = "core.v5.iexec.eth";
+const network:    string = process.env.CHAIN || "goerli";
+const address:    string = process.env.PROXY || "core.v5.iexec.eth";
 const privatekey: string = process.env.MNEMONIC;
 // ------------[  Configuration - End  ]------------
 
