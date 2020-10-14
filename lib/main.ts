@@ -26,30 +26,26 @@ const privatekey: string = process.env.MNEMONIC;
 	/**
 	 * HTTP endpoint
 	 */
-	const app = express()
-	app.use(bodyParser.json())
-	app.use(bodyParser.urlencoded({ extended: true }))
+	const app = express();
+	app.use(bodyParser.json());
+	app.use(bodyParser.urlencoded({ extended: true }));
 	// configure route
 	app.route('/submit')
 	.post(async (req, res) => {
 		try
 		{
 			service.trigger(req.body)
-			.then(dealids => res.json({
-				result: { success: true, dealids }
-			}))
-			.catch(error => res.json({
-				error
-			}))
+			.then(result => res.json(result))
+			.catch(error => res.json({ error: error.toString() }));
 		}
 		catch (error)
 		{
-			res.json({ error: error.message })
+			res.json({ error: error.message });
 		}
-	})
+	});
 	// start when service is ready
 	service.ready().then(() => {
-		process.env.PORT && app.listen(process.env.PORT)
-	})
+		process.env.PORT && app.listen(process.env.PORT);
+	});
 
 })().catch(console.error);

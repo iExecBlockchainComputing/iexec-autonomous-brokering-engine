@@ -1,8 +1,7 @@
-import { ethers                       } from 'ethers';
-import { TypedMessage, TypedDataUtils } from 'eth-sig-util';
-import { IexecOrderFetcher            } from './iexecorderfetcher';
-import * as utils                       from './utils';
-import * as types                       from './utils/types';
+import { ethers            } from 'ethers';
+import { IexecOrderFetcher } from './iexecorderfetcher';
+import * as utils            from './utils';
+import * as types            from './utils/types';
 
 const IexecInterface = require('@iexec/poco/build/contracts-min/IexecInterfaceToken.json');
 const IERC1654       = require('@iexec/poco/build/contracts-min/IERC1654.json');
@@ -47,12 +46,17 @@ export default class Core extends IexecOrderFetcher
 		console.log(`[    Daemon is running    ]`);
 	}
 
-	async trigger(raw) : Promise<string[]>
+	async trigger(raw) : Promise<{
+		success: boolean,
+		matchs:  types.DealDescriptor[],
+		error:   string,
+	}>
 	{
-		let dealids : string[] = [];
+		let matchs: types.DealDescriptor[] = [];
+		let error:  string                 = undefined;
 
 		let requestorder     = types.toRequestOrder(raw);
-		let requestorderhash = this.hashRequestOrder(requestorder);
+		let requestorderhash = await this.iexec.order.hashRequestorder(requestorder);
 		try
 		{
 			console.log(`[${requestorderhash}] checking signature`);
@@ -79,27 +83,31 @@ export default class Core extends IexecOrderFetcher
 				utils.require(Boolean(workerpoolorder), 'no compatible workerpoolorder found');
 
 				console.log(`[${requestorderhash}] sending match to core`);
-				const { events } = await (await this.contract.matchOrders(apporder, datasetorder, workerpoolorder, requestorder)).wait();
-				dealids = dealids.concat(events.filter(({ event }) => event == 'OrdersMatched').map(({ args }) => args[0]));
+				let match: types.DealDescriptor = await this.iexec.order.matchOrders({
+					apporder,
+					datasetorder,
+					workerpoolorder,
+					requestorder,
+				},{
+					checkRequest: false,
+				});
+				matchs.push(match);
 			}
 			console.log(`[${requestorderhash}] matching success`);
+
+			await utils.sleep(1000);
 		}
-		catch (e)
+		catch (err)
 		{
-			console.log(`[${requestorderhash}] ${e}`)
+			console.log(`[${requestorderhash}] ${err}`)
+			error = err.toString();
 		}
 
-		return dealids;
-	}
-
-	hashRequestOrder(requestorder): string
-	{
-		return ethers.utils.hexlify(TypedDataUtils.sign({
-			types:       types.TYPES,
-			primaryType: 'RequestOrder',
-			domain:      this.domain,
-			message:     requestorder,
-		} as TypedMessage<any>))
+		return {
+			success: (error == undefined),
+			matchs,
+			error
+		};
 	}
 
 	async checkPresignature(identity: string, hash: string): Promise<boolean>
@@ -127,7 +135,7 @@ export default class Core extends IexecOrderFetcher
 		}
 		try
 		{
-			const identityContract: ethers.Contract = new ethers.Contract(identity, IERC1654.abi, this.contract.provider);
+			let identityContract: ethers.Contract = new ethers.Contract(identity, IERC1654.abi, this.contract.provider);
 			return identityContract.interface.getSighash('isValidSignature(bytes32,bytes)') == await identityContract.isValidSignature(hash, sign);
 		}
 		catch

@@ -1,30 +1,3 @@
-export const TYPES: object =
-{
-	EIP712Domain: [
-		{ name: "name",               type: "string"  },
-		{ name: "version",            type: "string"  },
-		{ name: "chainId",            type: "uint256" },
-		{ name: "verifyingContract",  type: "address" },
-	],
-	RequestOrder: [
-		{ name: "app",                type: "address" },
-		{ name: "appmaxprice",        type: "uint256" },
-		{ name: "dataset",            type: "address" },
-		{ name: "datasetmaxprice",    type: "uint256" },
-		{ name: "workerpool",         type: "address" },
-		{ name: "workerpoolmaxprice", type: "uint256" },
-		{ name: "requester",          type: "address" },
-		{ name: "volume",             type: "uint256" },
-		{ name: "tag",                type: "bytes32" },
-		{ name: "category",           type: "uint256" },
-		{ name: "trust",              type: "uint256" },
-		{ name: "beneficiary",        type: "address" },
-		{ name: "callback",           type: "address" },
-		{ name: "params",             type: "string"  },
-		{ name: "salt",               type: "bytes32" },
-	],
-}
-
 export interface ERC712Domain
 {
 	name:              string;
@@ -92,6 +65,13 @@ export interface RequestOrder
 	params:             string; // string;
 	salt:               string; // bytes32;
 	sign:               string; // bytes;
+}
+
+export interface DealDescriptor
+{
+	dealid: string;
+	volume: string;
+	txHash: string;
 }
 
 export function toERC712Domain(domain : any) : ERC712Domain
