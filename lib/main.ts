@@ -1,4 +1,5 @@
 import express         from 'express';
+import cors            from 'cors';
 import bodyParser      from 'body-parser';
 import { ethers      } from 'ethers';
 import { utils       } from 'iexec';
@@ -27,6 +28,7 @@ const privatekey: string = process.env.MNEMONIC;
 	 * HTTP endpoint
 	 */
 	const app = express();
+	app.use(cors());
 	app.use(bodyParser.json());
 	app.use(bodyParser.urlencoded({ extended: true }));
 	// configure route
