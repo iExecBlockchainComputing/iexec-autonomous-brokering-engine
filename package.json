@@ -25,6 +25,7 @@
   "dependencies": {
     "@iexec/poco": "^5.2.1",
     "@types/node": "^14.11.8",
+    "cors": "^2.8.5",
     "eth-sig-util": "^2.5.3",
     "ethers": "^5.0.17",
     "express": "^4.17.1",
