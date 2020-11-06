@@ -32,6 +32,10 @@ const privatekey: string = process.env.MNEMONIC;
 	app.use(bodyParser.json());
 	app.use(bodyParser.urlencoded({ extended: true }));
 	// configure route
+	app.route('/')
+	.get(async (req, res) => {
+		res.send('ready');
+	});
 	app.route('/submit')
 	.post(async (req, res) => {
 		try

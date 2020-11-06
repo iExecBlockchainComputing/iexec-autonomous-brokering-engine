@@ -3,6 +3,7 @@ services:
   autonomous-brokering-engine:
     build:
       context: .
+      dockerfile: ./docker/Dockerfile
     ports:
       - 3000:3000
     environment:
