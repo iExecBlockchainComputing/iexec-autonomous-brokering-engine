@@ -69,10 +69,10 @@ export class IexecOrderFetcher
 	async getCompatibleWorkerpoolOrder(requestorder: types.RequestOrder): Promise<types.WorkerpoolOrder>
 	{
 		return (await this.iexec.orderbook.fetchWorkerpoolOrderbook(
-			requestorder.category,
 			{
-				workerpoolAddress: requestorder.workerpool != ethers.constants.AddressZero ? requestorder.workerpool : null,
-				minTrust:          requestorder.trust,
+				workerpool:	requestorder.workerpool != ethers.constants.AddressZero ? requestorder.workerpool : null,
+				minTrust:   requestorder.trust,
+				category:   requestorder.category
 				// minTag:            requestorder.workerpool, // TODO
 			}
 		)).workerpoolOrders
