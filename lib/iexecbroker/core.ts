@@ -1,4 +1,5 @@
 import { ethers            } from 'ethers';
+import { NonceManager      } from "@ethersproject/experimental";
 import { IexecOrderFetcher } from './iexecorderfetcher';
 import * as utils            from './utils';
 import * as types            from './utils/types';
@@ -18,7 +19,7 @@ export default class Core extends IexecOrderFetcher
 	)
 	{
 		super(signer);
-		this.contract = new ethers.Contract(address, IexecInterface.abi, signer);
+		this.contract = new ethers.Contract(address, IexecInterface.abi, new NonceManager(signer));
 		this.domainAsPromise = new Promise((resolve, reject) => {
 			this.contract.domain()
 			.then(domain => {
