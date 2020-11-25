@@ -59,16 +59,24 @@ export default class Core extends IexecOrderFetcher
 		utils.require(Boolean(workerpoolorder), 'no compatible workerpoolorder found');
 
 		console.log(`[${requestorderhash}] INFO: sending match to core`);
-		const match: types.DealDescriptor = await this.iexec.order.matchOrders({
-			apporder,
-			datasetorder,
-			workerpoolorder,
-			requestorder,
-		},{
-			checkRequest: false,
-		});
+		// const deal: types.DealDescriptor = await this.iexec.order.matchOrders({
+		// 	apporder,
+		// 	datasetorder,
+		// 	workerpoolorder,
+		// 	requestorder,
+		// },{
+		// 	checkRequest: false,
+		// });
 
-		return match;
+		const tx    = await (await this.contract.matchOrders(apporder, datasetorder, workerpoolorder, requestorder)).wait()
+		const event = tx.events.filter(({ event }) => event == 'OrdersMatched').find(Boolean);
+		const deal: types.DealDescriptor = {
+			dealid: event.args.dealid,
+			volume: event.args.volume.toNumber(),
+			txHash: tx.transactionHash,
+		};
+
+		return deal;
 	}
 
 	async retryMatch(requestorder: types.RequestOrder, requestorderhash: string, count: number = 3) : Promise<types.DealDescriptor>

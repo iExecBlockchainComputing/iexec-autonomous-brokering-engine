@@ -51,6 +51,8 @@ const privatekey: string = process.env.MNEMONIC;
 	});
 	// start when service is ready
 	service.ready().then(() => {
+		console.log('ready');
+		process.env.PORT && console.log(`listening on port ${process.env.PORT}`);
 		process.env.PORT && app.listen(process.env.PORT);
 	});
 
