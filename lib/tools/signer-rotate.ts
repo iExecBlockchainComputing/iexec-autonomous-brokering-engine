@@ -3,28 +3,31 @@ import { NonceManager } from '@ethersproject/experimental';
 
 export class SignerRotate extends ethers.Signer
 {
-	buffer: Array<ethers.Signer>;
-	active: NonceManager;
-	timer:  ReturnType<typeof setInterval>;
+	buffer:          Array<ethers.Signer>;
+	active:          NonceManager;
+	activeAsPromise: Promise<NonceManager>;
+	timer:           ReturnType<typeof setInterval>;
 
 	constructor(provider: ethers.providers.Provider, frequency : number = null)
 	{
 		super();
 		ethers.utils.defineReadOnly(this, "provider", provider || null);
-		this.buffer   = new Array<ethers.Signer>();
-		this.active   = null;
+		this.buffer = new Array<ethers.Signer>();
 		frequency && this.start(frequency);
 	}
 
-	start(frequency : number = 300000)
+	start(frequency : number = 300000) : Promise<void>
 	{
-		if (!this.timer)
-		{
-			this.timer = setInterval(this.next.bind(this), frequency);
-		}
+		return new Promise((resolve, reject) => {
+			if (!this.timer)
+			{
+				this.timer = setInterval(this.step.bind(this), frequency);
+			}
+			this.step().then(resolve).catch(reject);
+		});
 	}
 
-	stop()
+	stop() : void
 	{
 		if (this.timer)
 		{
@@ -36,26 +39,31 @@ export class SignerRotate extends ethers.Signer
 	addSigner(signer: ethers.Signer) : void
 	{
 		this.buffer.push(signer);
-		if (!this.active) this.next();
 	}
 
-	next() : Promise<ethers.Signer>
+	step() : Promise<void>
 	{
 		return new Promise((resolve, reject) => {
-			if (this.buffer.length)
-			{
-				if (this.active)
+			Promise.resolve(this.activeAsPromise)
+			.then(previous => {
+				if (this.buffer.length)
 				{
-					this.buffer.push(this.active.signer);
+					this.activeAsPromise = new Promise((publish) => {
+						if (previous) this.buffer.push(previous.signer);
+						const signer : ethers.Signer = this.buffer.shift();
+						const next   : NonceManager  = (new NonceManager(signer)).connect(this.provider);
+						next.getTransactionCount()
+						.then(count => {
+							next.getAddress().then(address => console.log(`[SignerRotate] wallet ${address} is now active`));
+							this.active = next;
+							publish(next);
+							resolve();
+						})
+						.catch(reject);
+					});
 				}
-				this.active = (new NonceManager(this.buffer.shift())).connect(this.provider);
-				this.active.getTransactionCount().then(() => resolve(this.active)).catch(reject);
-				this.active.getAddress().then(address => console.log(`[SignerRotate] wallet ${address} is now active`));
-			}
-			else
-			{
-				resolve(this.active);
-			}
+			})
+			.catch(reject)
 		});
 	}
 

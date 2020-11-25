@@ -16,10 +16,11 @@ const privatekeys: Array<string> = process.env.MNEMONIC.split(';');
 
 
 (async () => {
-	const provider: ethers.providers.Provider = ethers.getDefaultProvider(chain);
-	const signer:   SignerRotate              = new SignerRotate(provider, 300000); // every 5 mins
+	const signer: SignerRotate = new SignerRotate(ethers.getDefaultProvider(chain));
 	privatekeys.forEach(pk => signer.addSigner(new ethers.Wallet(pk)));
-	const service:  iExecBroker               = new iExecBroker(signer, address);
+	await signer.start(300000); // every 5 mins
+
+	const service: iExecBroker = new iExecBroker(signer, address);
 
 	/**
 	 * blockchain listener
