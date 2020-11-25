@@ -2,6 +2,8 @@ import { ethers       } from 'ethers';
 import { IExec, utils } from 'iexec';
 import * as types       from './utils/types';
 
+const randomChoice = items => items[items.length * Math.random() | 0];
+
 export class IexecOrderFetcher
 {
 	iexec:          IExec;
@@ -21,17 +23,19 @@ export class IexecOrderFetcher
 
 	async getCompatibleAppOrder(requestorder: types.RequestOrder): Promise<types.AppOrder>
 	{
-		return (await this.iexec.orderbook.fetchAppOrderbook(
-			requestorder.app,
-			{
-				dataset:    requestorder.dataset,
-				workerpool: requestorder.workerpool,
-				requester:  requestorder.requester,
-			}
-		))
-		.appOrders
-		.map(({ order }) => order)
-		.filter(({ appprice }) => appprice <= requestorder.appmaxprice)[0];
+		return randomChoice(
+			(await this.iexec.orderbook.fetchAppOrderbook(
+				requestorder.app,
+				{
+					dataset:    requestorder.dataset,
+					workerpool: requestorder.workerpool,
+					requester:  requestorder.requester,
+				}
+			))
+			.appOrders
+			.map(({ order }) => order)
+			.filter(({ appprice }) => appprice <= requestorder.appmaxprice)
+		);
 	}
 
 	async getCompatibleDatasetOrder(requestorder: types.RequestOrder): Promise<types.DatasetOrder>
@@ -52,31 +56,35 @@ export class IexecOrderFetcher
 		}
 		else
 		{
-			return (await this.iexec.orderbook.fetchDatasetOrderbook(
-				requestorder.dataset,
-				{
-					app:        requestorder.app,
-					workerpool: requestorder.workerpool,
-					requester:  requestorder.requester,
-				}
-			))
-			.datasetOrders
-			.map(({ order }) => order)
-			.filter(({ datasetprice }) => datasetprice <= requestorder.datasetmaxprice)[0];
+			return randomChoice(
+				(await this.iexec.orderbook.fetchDatasetOrderbook(
+					requestorder.dataset,
+					{
+						app:        requestorder.app,
+						workerpool: requestorder.workerpool,
+						requester:  requestorder.requester,
+					}
+				))
+				.datasetOrders
+				.map(({ order }) => order)
+				.filter(({ datasetprice }) => datasetprice <= requestorder.datasetmaxprice)
+			);
 		}
 	}
 
 	async getCompatibleWorkerpoolOrder(requestorder: types.RequestOrder): Promise<types.WorkerpoolOrder>
 	{
-		return (await this.iexec.orderbook.fetchWorkerpoolOrderbook(
-			{
-				workerpool:	requestorder.workerpool != ethers.constants.AddressZero ? requestorder.workerpool : null,
-				minTrust:   requestorder.trust,
-				category:   requestorder.category
-				// minTag:            requestorder.workerpool, // TODO
-			}
-		)).workerpoolOrders
-		.map(({ order }) => order)
-		.filter(({ workerpoolprice }) => workerpoolprice <= requestorder.workerpoolmaxprice)[0];
+		return randomChoice(
+			(await this.iexec.orderbook.fetchWorkerpoolOrderbook(
+				{
+					workerpool:	requestorder.workerpool != ethers.constants.AddressZero ? requestorder.workerpool : null,
+					minTrust:   requestorder.trust,
+					category:   requestorder.category
+					// minTag:            requestorder.workerpool, // TODO
+				}
+			)).workerpoolOrders
+			.map(({ order }) => order)
+			.filter(({ workerpoolprice }) => workerpoolprice <= requestorder.workerpoolmaxprice)
+		);
 	}
 }
