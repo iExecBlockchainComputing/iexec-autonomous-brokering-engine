@@ -1,6 +1,6 @@
 import { ethers            } from 'ethers';
 import { NonceManager      } from '@ethersproject/experimental';
-import { IexecOrderFetcher } from './iexecorderfetcher';
+import { IexecOrderFetcher } from './iexec-order-fetcher';
 import * as utils            from './utils';
 import * as types            from './utils/types';
 
@@ -9,6 +9,7 @@ const IERC1654       = require('@iexec/poco/build/contracts-min/IERC1654.json');
 
 export default class Core extends IexecOrderFetcher
 {
+	signer:          ethers.Signer;
 	contract:        ethers.Contract;
 	domain:          types.ERC712Domain;
 	domainAsPromise: Promise<types.ERC712Domain>;
@@ -18,8 +19,10 @@ export default class Core extends IexecOrderFetcher
 		address: string = 'core.v5.iexec.eth',
 	)
 	{
-		super(signer);
-		this.contract = new ethers.Contract(address, IexecInterface.abi, new NonceManager(signer));
+		super(signer.provider);
+		this.signer   = signer;
+		this.contract = new ethers.Contract(address, IexecInterface.abi, this.signer);
+
 		this.domainAsPromise = new Promise((resolve, reject) => {
 			this.contract.domain()
 			.then(domain => {
@@ -32,7 +35,8 @@ export default class Core extends IexecOrderFetcher
 
 	async ready() : Promise<void>
 	{
-		await this.iexecAsPromise;
+		await super.ready();
+		await this.contract.resolvedAddress;
 		await this.domainAsPromise;
 	}
 
@@ -58,7 +62,7 @@ export default class Core extends IexecOrderFetcher
 		utils.require(Boolean(datasetorder),    'no compatible datasetorder found');
 		utils.require(Boolean(workerpoolorder), 'no compatible workerpoolorder found');
 
-		console.log(`[${requestorderhash}] INFO: sending match to core`);
+		console.log(`[${requestorderhash}] INFO: sending match to core (wallet: ${await this.contract.signer.getAddress()})`);
 		// const deal: types.DealDescriptor = await this.iexec.order.matchOrders({
 		// 	apporder,
 		// 	datasetorder,

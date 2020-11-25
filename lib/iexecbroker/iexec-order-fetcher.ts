@@ -9,16 +9,24 @@ export class IexecOrderFetcher
 	iexec:          IExec;
 	iexecAsPromise: Promise<IExec>
 
-	constructor(ethProvider: ethers.Signer)
+	constructor(provider: ethers.providers.Provider, privatekey: string = ethers.utils.hexlify(ethers.utils.randomBytes(32)))
 	{
 		this.iexecAsPromise = new Promise((resolve, reject) => {
-			ethProvider.getChainId()
-			.then(chainId => {
-				this.iexec = new IExec({ ethProvider, chainId });
+			provider.getNetwork()
+			.then(({ name, chainId }) => {
+				this.iexec = new IExec({
+					ethProvider: utils.getSignerFromPrivateKey(name, privatekey),
+					chainId,
+				});
 				resolve(this.iexec);
 			})
 			.catch(reject);
 		});
+	}
+
+	async ready() : Promise<void>
+	{
+		await this.iexecAsPromise;
 	}
 
 	async getCompatibleAppOrder(requestorder: types.RequestOrder): Promise<types.AppOrder>

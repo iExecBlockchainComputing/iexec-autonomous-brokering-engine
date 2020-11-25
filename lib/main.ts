@@ -1,23 +1,25 @@
-import express         from 'express';
-import cors            from 'cors';
-import bodyParser      from 'body-parser';
-import { ethers      } from 'ethers';
-import { utils       } from 'iexec';
-import { iExecBroker } from './iexecbroker';
+import express          from 'express';
+import cors             from 'cors';
+import bodyParser       from 'body-parser';
+import { ethers       } from 'ethers';
+import { iExecBroker  } from './iexecbroker';
+import { SignerRotate } from './tools/signer-rotate';
 
 
 
 // ------------[ Configuration - Begin ]------------
-const network:    string = process.env.CHAIN || "goerli";
-const address:    string = process.env.PROXY || "core.v5.iexec.eth";
-const privatekey: string = process.env.MNEMONIC;
+const chain:       string        = process.env.CHAIN || 'goerli';
+const address:     string        = process.env.PROXY || 'core.v5.iexec.eth';
+const privatekeys: Array<string> = process.env.MNEMONIC.split(';');
 // ------------[  Configuration - End  ]------------
 
 
 
 (async () => {
-	let wallet:  ethers.Signer = utils.getSignerFromPrivateKey(network, privatekey);
-	let service: iExecBroker   = new iExecBroker(wallet, address);
+	const provider: ethers.providers.Provider = ethers.getDefaultProvider(chain);
+	const signer:   SignerRotate              = new SignerRotate(provider, 300000); // every 5 mins
+	privatekeys.forEach(pk => signer.addSigner(new ethers.Wallet(pk)));
+	const service:  iExecBroker               = new iExecBroker(signer, address);
 
 	/**
 	 * blockchain listener
