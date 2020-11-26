@@ -21,9 +21,17 @@ export class SignerRotate extends ethers.Signer
 		return new Promise((resolve, reject) => {
 			if (!this.timer)
 			{
-				this.timer = setInterval(this.step.bind(this), frequency);
+				this.step()
+				.then(() => {
+					this.timer = setInterval(this.step.bind(this), frequency);
+					resolve();
+				})
+				.catch(reject);
 			}
-			this.step().then(resolve).catch(reject);
+			else
+			{
+				resolve();
+			}
 		});
 	}
 
