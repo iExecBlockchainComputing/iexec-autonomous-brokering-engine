@@ -39,6 +39,7 @@ export class SignerRotate extends ethers.Signer
 	addSigner(signer: ethers.Signer) : void
 	{
 		this.buffer.push(signer);
+		signer.getAddress().then(address => console.log(`[SignerRotate] wallet ${address} added to the queue`));
 	}
 
 	step() : Promise<void>
@@ -63,7 +64,7 @@ export class SignerRotate extends ethers.Signer
 					});
 				}
 			})
-			.catch(reject)
+			.catch(reject);
 		});
 	}
 
