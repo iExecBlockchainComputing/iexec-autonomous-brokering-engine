@@ -1,7 +1,10 @@
 node_modules
 dist
 
+lib/stress
+
 package-lock.json
+yarn.lock
 
 .env
 
