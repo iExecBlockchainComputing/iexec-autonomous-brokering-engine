@@ -12,19 +12,17 @@ import { SignerRotateDistribute } from './tools/signer-rotate-distribute';
 const chain:       string        = process.env.CHAIN || 'goerli';
 const address:     string        = process.env.PROXY || 'core.v5.iexec.eth';
 const privatekeys: Array<string> = process.env.MNEMONIC.split(';');
+const concurency:  number        = parseInt(process.env.CONCURENCY) || 1;
 // ------------[  Configuration - End  ]------------
 
 
 
 (async () => {
-	const signer: SignerRotateDistribute = new SignerRotateDistribute(ethers.getDefaultProvider(chain), 3);
+	const signer: SignerRotateDistribute = new SignerRotateDistribute(ethers.getDefaultProvider(chain), concurency);
 	for (const privatekey of privatekeys) { await signer.addSigner(new ethers.Wallet(privatekey)); }
 	await signer.start(300000); // every 5 mins
 
 	const service: iExecBroker = new iExecBroker(signer, address);
-
-	service.ready().then(() => console.log(service.domain));
-	return
 
 	/**
 	 * blockchain listener

@@ -1,6 +1,7 @@
 import { ethers            } from 'ethers';
 import { NonceManager      } from '@ethersproject/experimental';
 import { IexecOrderFetcher } from './iexec-order-fetcher';
+import { MultiSigner       } from '../tools/multi-signer';
 import * as utils            from './utils';
 import * as types            from './utils/types';
 
@@ -9,19 +10,19 @@ const IERC1654       = require('@iexec/poco/build/contracts-min/IERC1654.json');
 
 export default class Core extends IexecOrderFetcher
 {
-	signer:          ethers.Signer;
+	signer:          ethers.Signer | MultiSigner;
 	contract:        ethers.Contract;
 	domain:          types.ERC712Domain;
 	domainAsPromise: Promise<types.ERC712Domain>;
 
 	constructor(
-		signer:  ethers.Signer,
+		signer:  ethers.Signer | MultiSigner,
 		address: string = 'core.v5.iexec.eth',
 	)
 	{
 		super(signer.provider);
 		this.signer   = signer;
-		this.contract = new ethers.Contract(address, IexecInterface.abi, this.signer);
+		this.contract = new ethers.Contract(address, IexecInterface.abi, signer.provider);
 
 		this.domainAsPromise = new Promise((resolve, reject) => {
 			this.contract.domain()
@@ -62,17 +63,12 @@ export default class Core extends IexecOrderFetcher
 		utils.require(Boolean(datasetorder),    'no compatible datasetorder found');
 		utils.require(Boolean(workerpoolorder), 'no compatible workerpoolorder found');
 
-		console.log(`[${requestorderhash}] INFO: sending match to core (wallet: ${await this.contract.signer.getAddress()})`);
-		// const deal: types.DealDescriptor = await this.iexec.order.matchOrders({
-		// 	apporder,
-		// 	datasetorder,
-		// 	workerpoolorder,
-		// 	requestorder,
-		// },{
-		// 	checkRequest: false,
-		// });
+		const signer      : ethers.Signer = this.signer as ethers.Signer;
+		const multisigner : MultiSigner   = this.signer as MultiSigner;
+		const wallet      : ethers.Signer = multisigner.current ? multisigner.current() : signer;
 
-		const tx    = await (await this.contract.matchOrders(apporder, datasetorder, workerpoolorder, requestorder)).wait()
+		console.log(`[${requestorderhash}] INFO: sending match to core (wallet: ${await wallet.getAddress()})`);
+		const tx    = await (await this.contract.connect(wallet).matchOrders(apporder, datasetorder, workerpoolorder, requestorder)).wait()
 		const event = tx.events.filter(({ event }) => event == 'OrdersMatched').find(Boolean);
 		const deal: types.DealDescriptor = {
 			dealid: event.args.dealid,
