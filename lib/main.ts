@@ -1,9 +1,10 @@
-import express          from 'express';
-import cors             from 'cors';
-import bodyParser       from 'body-parser';
-import { ethers       } from 'ethers';
-import { iExecBroker  } from './iexecbroker';
-import { SignerRotate } from './tools/signer-rotate';
+import express                    from 'express';
+import cors                       from 'cors';
+import bodyParser                 from 'body-parser';
+import { ethers                 } from 'ethers';
+import { iExecBroker            } from './iexecbroker';
+import { SignerRotate           } from './tools/signer-rotate';
+import { SignerRotateDistribute } from './tools/signer-rotate-distribute';
 
 
 
@@ -16,11 +17,14 @@ const privatekeys: Array<string> = process.env.MNEMONIC.split(';');
 
 
 (async () => {
-	const signer: SignerRotate = new SignerRotate(ethers.getDefaultProvider(chain));
-	privatekeys.forEach(pk => signer.addSigner(new ethers.Wallet(pk)));
+	const signer: SignerRotateDistribute = new SignerRotateDistribute(ethers.getDefaultProvider(chain), 3);
+	for (const privatekey of privatekeys) { await signer.addSigner(new ethers.Wallet(privatekey)); }
 	await signer.start(300000); // every 5 mins
 
 	const service: iExecBroker = new iExecBroker(signer, address);
+
+	service.ready().then(() => console.log(service.domain));
+	return
 
 	/**
 	 * blockchain listener
