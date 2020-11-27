@@ -60,10 +60,6 @@ export default class Core extends IexecOrderFetcher
 		utils.require(Boolean(datasetorder),    'no compatible datasetorder found');
 		utils.require(Boolean(workerpoolorder), 'no compatible workerpoolorder found');
 
-		// const signer      : ethers.Signer = this.signer as ethers.Signer;
-		// const multisigner : MultiSigner   = this.signer as MultiSigner;
-		// const wallet      : ethers.Signer = multisigner.current ? multisigner.current() : signer;
-
 		console.log(`[${requestorderhash}] INFO: sending match to core`);
 		const tx    = await (await this.contract.matchOrders(apporder, datasetorder, workerpoolorder, requestorder)).wait()
 		const event = tx.events.filter(({ event }) => event == 'OrdersMatched').find(Boolean);
