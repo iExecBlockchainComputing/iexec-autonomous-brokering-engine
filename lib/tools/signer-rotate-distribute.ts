@@ -2,9 +2,8 @@ import { ethers       } from 'ethers';
 import { NonceManager } from '@ethersproject/experimental';
 import { MultiSigner  } from './multi-signer';
 
-export class SignerRotateDistribute implements MultiSigner
+export class SignerRotateDistribute extends ethers.Signer
 {
-	readonly provider: ethers.providers.Provider;
 	index:             number;
 	target:            number;
 	signers:           Map<string, NonceManager>;
@@ -19,7 +18,8 @@ export class SignerRotateDistribute implements MultiSigner
 		frequency: number = null,
 	)
 	{
-		this.provider        = provider;
+		super();
+		ethers.utils.defineReadOnly(this, "provider", provider || null);
 		this.index           = 0;
 		this.target          = target;
 		this.signers         = new Map<string, NonceManager>();
@@ -112,6 +112,42 @@ export class SignerRotateDistribute implements MultiSigner
 				});
 			});
 		});
+	}
+
+	connect(provider: ethers.providers.Provider): NonceManager {
+		throw Error("[DANGER] connect is unreliable in SignerRotateDistribute");
+	}
+
+	getAddress(): Promise<string> {
+		return this.current().getAddress();
+	}
+
+	getTransactionCount(blockTag?: ethers.providers.BlockTag): Promise<number> {
+		throw Error("[DANGER] getTransactionCount is unreliable in SignerRotateDistribute");
+	}
+
+	signMessage(message: ethers.Bytes | string): Promise<string> {
+		throw Error("[DANGER] signMessage is unreliable in SignerRotateDistribute");
+	}
+
+	signTransaction(transaction: ethers.utils.Deferrable<ethers.providers.TransactionRequest>): Promise<string> {
+		const signer = this.signers.get(transaction.from.toString()) || this.current();
+		return signer.signTransaction(transaction);
+	}
+
+	sendTransaction(transaction: ethers.utils.Deferrable<ethers.providers.TransactionRequest>): Promise<ethers.providers.TransactionResponse> {
+		const signer = this.signers.get(transaction.from.toString()) || this.current();
+		return signer.sendTransaction(transaction);
+	}
+
+	checkTransaction(transaction: ethers.utils.Deferrable<ethers.providers.TransactionRequest>): ethers.utils.Deferrable<ethers.providers.TransactionRequest> {
+		const signer = this.signers.get(transaction.from.toString()) || this.current();
+		return signer.checkTransaction(transaction);
+	}
+
+	populateTransaction(transaction: ethers.utils.Deferrable<ethers.providers.TransactionRequest>): Promise<ethers.providers.TransactionRequest> {
+		const signer = this.signers.get(transaction.from.toString()) || this.current();
+		return signer.populateTransaction(transaction);
 	}
 }
 

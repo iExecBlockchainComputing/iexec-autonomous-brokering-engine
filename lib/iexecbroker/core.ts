@@ -10,19 +10,17 @@ const IERC1654       = require('@iexec/poco/build/contracts-min/IERC1654.json');
 
 export default class Core extends IexecOrderFetcher
 {
-	signer:          ethers.Signer | MultiSigner;
 	contract:        ethers.Contract;
 	domain:          types.ERC712Domain;
 	domainAsPromise: Promise<types.ERC712Domain>;
 
 	constructor(
-		signer:  ethers.Signer | MultiSigner,
+		signer:  ethers.Signer,
 		address: string = 'core.v5.iexec.eth',
 	)
 	{
 		super(signer.provider);
-		this.signer   = signer;
-		this.contract = new ethers.Contract(address, IexecInterface.abi, signer.provider);
+		this.contract = new ethers.Contract(address, IexecInterface.abi, signer);
 
 		this.domainAsPromise = new Promise((resolve, reject) => {
 			this.contract.domain()
@@ -63,12 +61,12 @@ export default class Core extends IexecOrderFetcher
 		utils.require(Boolean(datasetorder),    'no compatible datasetorder found');
 		utils.require(Boolean(workerpoolorder), 'no compatible workerpoolorder found');
 
-		const signer      : ethers.Signer = this.signer as ethers.Signer;
-		const multisigner : MultiSigner   = this.signer as MultiSigner;
-		const wallet      : ethers.Signer = multisigner.current ? multisigner.current() : signer;
+		// const signer      : ethers.Signer = this.signer as ethers.Signer;
+		// const multisigner : MultiSigner   = this.signer as MultiSigner;
+		// const wallet      : ethers.Signer = multisigner.current ? multisigner.current() : signer;
 
-		console.log(`[${requestorderhash}] INFO: sending match to core (wallet: ${await wallet.getAddress()})`);
-		const tx    = await (await this.contract.connect(wallet).matchOrders(apporder, datasetorder, workerpoolorder, requestorder)).wait()
+		console.log(`[${requestorderhash}] INFO: sending match to core`);
+		const tx    = await (await this.contract.matchOrders(apporder, datasetorder, workerpoolorder, requestorder)).wait()
 		const event = tx.events.filter(({ event }) => event == 'OrdersMatched').find(Boolean);
 		const deal: types.DealDescriptor = {
 			dealid: event.args.dealid,
