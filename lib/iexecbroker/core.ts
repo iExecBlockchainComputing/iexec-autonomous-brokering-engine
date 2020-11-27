@@ -1,7 +1,6 @@
 import { ethers            } from 'ethers';
 import { NonceManager      } from '@ethersproject/experimental';
 import { IexecOrderFetcher } from './iexec-order-fetcher';
-import { MultiSigner       } from '../tools/multi-signer';
 import * as utils            from './utils';
 import * as types            from './utils/types';
 

@@ -1,6 +1,5 @@
 import { ethers       } from 'ethers';
 import { NonceManager } from '@ethersproject/experimental';
-import { MultiSigner  } from './multi-signer';
 
 export class SignerRotateDistribute extends ethers.Signer
 {
