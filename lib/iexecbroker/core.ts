@@ -122,6 +122,7 @@ export default class Core extends IexecOrderFetcher
 				const match: types.DealDescriptor = await this.retryMatch(requestorder, requestorderhash);
 				console.log(`[${requestorderhash}] INFO: matching success`);
 				matchs.push(match);
+				await utils.sleep(1000);
 			}
 		}
 		catch (err)
