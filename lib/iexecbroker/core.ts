@@ -9,7 +9,6 @@ const IERC1654       = require('@iexec/poco/build/contracts-min/IERC1654.json');
 
 export default class Core extends IexecOrderFetcher
 {
-	signer:          ethers.Signer;
 	contract:        ethers.Contract;
 	domain:          types.ERC712Domain;
 	domainAsPromise: Promise<types.ERC712Domain>;
@@ -20,8 +19,7 @@ export default class Core extends IexecOrderFetcher
 	)
 	{
 		super(signer.provider);
-		this.signer   = signer;
-		this.contract = new ethers.Contract(address, IexecInterface.abi, this.signer);
+		this.contract = new ethers.Contract(address, IexecInterface.abi, signer);
 
 		this.domainAsPromise = new Promise((resolve, reject) => {
 			this.contract.domain()
@@ -62,16 +60,7 @@ export default class Core extends IexecOrderFetcher
 		utils.require(Boolean(datasetorder),    'no compatible datasetorder found');
 		utils.require(Boolean(workerpoolorder), 'no compatible workerpoolorder found');
 
-		console.log(`[${requestorderhash}] INFO: sending match to core (wallet: ${await this.contract.signer.getAddress()})`);
-		// const deal: types.DealDescriptor = await this.iexec.order.matchOrders({
-		// 	apporder,
-		// 	datasetorder,
-		// 	workerpoolorder,
-		// 	requestorder,
-		// },{
-		// 	checkRequest: false,
-		// });
-
+		console.log(`[${requestorderhash}] INFO: sending match to core`);
 		const tx    = await (await this.contract.matchOrders(apporder, datasetorder, workerpoolorder, requestorder)).wait()
 		const event = tx.events.filter(({ event }) => event == 'OrdersMatched').find(Boolean);
 		const deal: types.DealDescriptor = {
