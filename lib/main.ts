@@ -59,7 +59,7 @@ const concurency:  number        = parseInt(process.env.CONCURENCY) || 1;
         try
         {
             service.matchOrders(req.body)
-            .then(result => res.json(result))
+            .then(result => res.json(result.match))
             .catch(error => res.json({ error: error.toString() }));
         }
         catch (error)
