@@ -67,6 +67,14 @@ export interface RequestOrder
 	sign:               string; // bytes;
 }
 
+export interface BrokerOrder
+{
+	apporder:           AppOrder;
+	workerpoolorder:    WorkerpoolOrder;
+	datasetorder:       DatasetOrder;
+	requestorder:       RequestOrder;
+}
+
 export interface DealDescriptor
 {
 	dealid: string;
@@ -103,5 +111,15 @@ export function toRequestOrder(order: any) : RequestOrder
 		params:             String(order.params),
 		salt:               String(order.salt),
 		sign:               String(order.sign),
+	};
+}
+
+export function toBrokerOrder(order: any) : BrokerOrder
+{
+	return {
+		apporder:           order.apporder,
+		workerpoolorder:    order.workerpoolorder,
+		datasetorder:       order.datasetorder,
+		requestorder:       order.requestorder,
 	};
 }

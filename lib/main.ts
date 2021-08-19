@@ -54,6 +54,19 @@ const concurency:  number        = parseInt(process.env.CONCURENCY) || 1;
 			res.json({ error: error.message });
 		}
 	});
+    app.route('/orders/match')
+    .post(async (req, res) => {
+        try
+        {
+            service.matchOrders(req.body)
+            .then(result => res.json(result))
+            .catch(error => res.json({ error: error.toString() }));
+        }
+        catch (error)
+        {
+            res.json({ error: error.message });
+        }
+    });
 	// start when service is ready
 	service.ready().then(() => {
 		console.log('[SERVICE] ready');

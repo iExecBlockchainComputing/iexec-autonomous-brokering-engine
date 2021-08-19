@@ -138,6 +138,68 @@ export default class Core extends IexecOrderFetcher
 		};
 	}
 
+    async tryMatchOrders(brokerOrder: types.BrokerOrder) : Promise<types.DealDescriptor>
+    {
+        let context: string = `[requester:${brokerOrder.requestorder.requester}, ` +
+            `app:${brokerOrder.requestorder.app}, ` +
+            `workerpool:${brokerOrder.requestorder.workerpool}, ` +
+            `dataset:${brokerOrder.requestorder.dataset}]`
+
+        console.log(`INFO: tryMatch ${context}`);
+
+        let apporder:         types.AppOrder        = brokerOrder.apporder
+        let workerpoolorder:  types.WorkerpoolOrder = brokerOrder.workerpoolorder
+        let datasetorder:     types.DatasetOrder    = brokerOrder.datasetorder
+        let requestorder:     types.RequestOrder    = brokerOrder.requestorder
+
+
+        console.log(`INFO: sending match ${context}`);
+        const tx    = await (await this.contract.matchOrders(apporder, datasetorder, workerpoolorder, requestorder)).wait()
+        const event = tx.events.filter(({ event }) => event == 'OrdersMatched').find(Boolean);
+        const deal: types.DealDescriptor = {
+            dealid: event.args.dealid,
+            volume: event.args.volume.toNumber(),
+            txHash: tx.transactionHash,
+        };
+
+        return deal;
+    }
+
+    async matchOrders(raw) : Promise<{
+        success: boolean,
+        match:  types.DealDescriptor,
+        error:   string,
+    }>
+    {
+        let match:           types.DealDescriptor = undefined;;
+        let error:           string                 = undefined;
+        let brokerOrder:     types.BrokerOrder     = types.toBrokerOrder(raw);
+
+        let context: string = `[requester:${brokerOrder.requestorder.requester}, ` +
+            `app:${brokerOrder.requestorder.app}, ` +
+            `workerpool:${brokerOrder.requestorder.workerpool}, ` +
+            `dataset:${brokerOrder.requestorder.dataset}]`
+
+        try
+        {
+            console.log(`Received ${context}`);
+            match = await this.tryMatchOrders(brokerOrder);
+            console.log(`INFO: matching success with deal ID:${match.dealid} ${context}`);
+
+        }
+        catch (err)
+        {
+            console.log(`ERROR: ${err} ${context}`)
+            error = err.toString();
+        }
+
+        return {
+            success: (error == undefined),
+            match,
+            error
+        };
+    }
+
 	async checkPresignature(identity: string, hash: string): Promise<boolean>
 	{
 		return identity == await this.contract.viewPresigned(hash);
