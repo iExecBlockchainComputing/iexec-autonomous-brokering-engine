@@ -4,8 +4,8 @@ import * as types       from './utils/types';
 
 const randomChoice = items => items[items.length * Math.random() | 0];
 
-const chain:       string        = process.env.CHAIN || 'goerli';
-const address:     string        = process.env.PROXY || 'core.v5.iexec.eth';
+const chain:                string  = process.env.CHAIN || 'goerli';
+const iExecProxyAddress:    string  = process.env.PROXY || 'core.v5.iexec.eth';
 
 export class IexecOrderFetcher
 {
@@ -21,7 +21,7 @@ export class IexecOrderFetcher
 					ethProvider: utils.getSignerFromPrivateKey(chain, privatekey),
 					chainId,
 				},
-				{ hubAddress: address });
+				{ hubAddress: iExecProxyAddress });
 				resolve(this.iexec);
 			})
 			.catch(reject);
