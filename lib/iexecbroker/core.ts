@@ -6,6 +6,21 @@ import * as types            from './utils/types';
 
 const IexecInterface = require('@iexec/poco/build/contracts-min/IexecInterfaceToken.json');
 const IERC1654       = require('@iexec/poco/build/contracts-min/IERC1654.json');
+const winston        = require('winston');
+const logger = winston.createLogger({
+    transports: [
+        new winston.transports.Console()
+    ],
+    format: winston.format.combine(
+        winston.format.label({
+            label: `Core🏷️`
+        }),
+        winston.format.timestamp({
+           format: 'MMM-DD-YYYY HH:mm:ss'
+       }),
+        winston.format.printf(info => `${info.level}: ${info.label}: ${[info.timestamp]}: ${info.message}`),
+    )
+});
 
 export default class Core extends IexecOrderFetcher
 {
@@ -138,33 +153,6 @@ export default class Core extends IexecOrderFetcher
 		};
 	}
 
-    async tryMatchOrders(brokerOrder: types.BrokerOrder) : Promise<types.DealDescriptor>
-    {
-        let context: string = `[requester:${brokerOrder.requestorder.requester}, ` +
-            `app:${brokerOrder.requestorder.app}, ` +
-            `workerpool:${brokerOrder.requestorder.workerpool}, ` +
-            `dataset:${brokerOrder.requestorder.dataset}]`
-
-        console.log(`INFO: tryMatch ${context}`);
-
-        let apporder:         types.AppOrder        = brokerOrder.apporder
-        let workerpoolorder:  types.WorkerpoolOrder = brokerOrder.workerpoolorder
-        let datasetorder:     types.DatasetOrder    = brokerOrder.datasetorder
-        let requestorder:     types.RequestOrder    = brokerOrder.requestorder
-
-
-        console.log(`INFO: sending match ${context}`);
-        const tx    = await (await this.contract.matchOrders(apporder, datasetorder, workerpoolorder, requestorder)).wait()
-        const event = tx.events.filter(({ event }) => event == 'OrdersMatched').find(Boolean);
-        const deal: types.DealDescriptor = {
-            dealid: event.args.dealid,
-            volume: event.args.volume.toNumber(),
-            txHash: tx.transactionHash,
-        };
-
-        return deal;
-    }
-
     async matchOrders(raw) : Promise<{
         success: boolean,
         match:  types.DealDescriptor,
@@ -182,14 +170,14 @@ export default class Core extends IexecOrderFetcher
 
         try
         {
-            console.log(`Received ${context}`);
+            logger.info(`Received match order request ${context}`);
             match = await this.tryMatchOrders(brokerOrder);
-            console.log(`INFO: matching success with deal ID:${match.dealid} ${context}`);
+            logger.info(`Matched orders with deal ${match.dealid} ${context}`);
 
         }
         catch (err)
         {
-            console.log(`ERROR: ${err} ${context}`)
+            logger.error(`${err} ${context}`)
             error = err.toString();
         }
 
@@ -199,6 +187,30 @@ export default class Core extends IexecOrderFetcher
             error
         };
     }
+
+        async tryMatchOrders(brokerOrder: types.BrokerOrder) : Promise<types.DealDescriptor>
+        {
+            let context: string = `[requester:${brokerOrder.requestorder.requester}, ` +
+                `app:${brokerOrder.requestorder.app}, ` +
+                `workerpool:${brokerOrder.requestorder.workerpool}, ` +
+                `dataset:${brokerOrder.requestorder.dataset}]`
+
+            let apporder:         types.AppOrder        = brokerOrder.apporder
+            let workerpoolorder:  types.WorkerpoolOrder = brokerOrder.workerpoolorder
+            let datasetorder:     types.DatasetOrder    = brokerOrder.datasetorder
+            let requestorder:     types.RequestOrder    = brokerOrder.requestorder
+
+            logger.info(`Sending match orders ${context}`);
+            const tx    = await (await this.contract.matchOrders(apporder, datasetorder, workerpoolorder, requestorder)).wait()
+            const event = tx.events.filter(({ event }) => event == 'OrdersMatched').find(Boolean);
+            const deal: types.DealDescriptor = {
+                dealid: event.args.dealid,
+                volume: event.args.volume.toNumber(),
+                txHash: tx.transactionHash,
+            };
+
+            return deal;
+        }
 
 	async checkPresignature(identity: string, hash: string): Promise<boolean>
 	{
