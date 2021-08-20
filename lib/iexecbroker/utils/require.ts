@@ -1,4 +1,7 @@
 export default function(value: boolean, reason: string = "") : void
 {
-	if (!value) throw Error(reason);
+	if (!value){
+	    console.log(reason)
+	    throw Error(reason);
+	}
 }

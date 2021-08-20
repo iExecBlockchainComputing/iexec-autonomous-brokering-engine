@@ -6,6 +6,21 @@ import * as types            from './utils/types';
 
 const IexecInterface = require('@iexec/poco/build/contracts-min/IexecInterfaceToken.json');
 const IERC1654       = require('@iexec/poco/build/contracts-min/IERC1654.json');
+const winston        = require('winston');
+const logger = winston.createLogger({
+    transports: [
+        new winston.transports.Console()
+    ],
+    format: winston.format.combine(
+        winston.format.label({
+            label: `Core🏷️`
+        }),
+        winston.format.timestamp({
+           format: 'MMM-DD-YYYY HH:mm:ss'
+       }),
+        winston.format.printf(info => `${info.level}: ${info.label}: ${[info.timestamp]}: ${info.message}`),
+    )
+});
 
 export default class Core extends IexecOrderFetcher
 {
@@ -137,6 +152,71 @@ export default class Core extends IexecOrderFetcher
 			error
 		};
 	}
+
+    async matchOrders(raw) : Promise<{
+        success: boolean,
+        match:  types.DealDescriptor,
+        error:   string,
+    }>
+    {
+        let match:           types.DealDescriptor = undefined;;
+        let error:           string                 = undefined;
+        let brokerOrder:     types.BrokerOrder     = types.toBrokerOrder(raw);
+
+        utils.require(brokerOrder != undefined, 'missing broker order');
+        utils.require(brokerOrder.requestorder != undefined, 'missing requestorder order');
+        utils.require(brokerOrder.apporder != undefined, 'missing apporder order');
+        utils.require(brokerOrder.workerpoolorder != undefined, 'missing workerpool order');
+        //dataset order is optional
+
+        let context: string = `[requester:${brokerOrder.requestorder.requester}, ` +
+            `app:${brokerOrder.requestorder.app}, ` +
+            `workerpool:${brokerOrder.requestorder.workerpool}, ` +
+            `dataset:${brokerOrder.requestorder.dataset}]`
+
+        try
+        {
+            logger.info(`Received match order request ${context}`);
+            match = await this.tryMatchOrders(brokerOrder);
+            logger.info(`Matched orders with deal ${match.dealid} ${context}`);
+
+        }
+        catch (err)
+        {
+            logger.error(`${err} ${context}`)
+            error = err.toString();
+        }
+
+        return {
+            success: (error == undefined),
+            match,
+            error
+        };
+    }
+
+        async tryMatchOrders(brokerOrder: types.BrokerOrder) : Promise<types.DealDescriptor>
+        {
+            let context: string = `[requester:${brokerOrder.requestorder.requester}, ` +
+                `app:${brokerOrder.requestorder.app}, ` +
+                `workerpool:${brokerOrder.requestorder.workerpool}, ` +
+                `dataset:${brokerOrder.requestorder.dataset}]`
+
+            let apporder:         types.AppOrder        = brokerOrder.apporder
+            let workerpoolorder:  types.WorkerpoolOrder = brokerOrder.workerpoolorder
+            let datasetorder:     types.DatasetOrder    = brokerOrder.datasetorder
+            let requestorder:     types.RequestOrder    = brokerOrder.requestorder
+
+            logger.info(`Sending match orders ${context}`);
+            const tx    = await (await this.contract.matchOrders(apporder, datasetorder, workerpoolorder, requestorder)).wait()
+            const event = tx.events.filter(({ event }) => event == 'OrdersMatched').find(Boolean);
+            const deal: types.DealDescriptor = {
+                dealid: event.args.dealid,
+                volume: event.args.volume.toNumber(),
+                txHash: tx.transactionHash,
+            };
+
+            return deal;
+        }
 
 	async checkPresignature(identity: string, hash: string): Promise<boolean>
 	{
