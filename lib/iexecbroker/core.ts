@@ -163,6 +163,12 @@ export default class Core extends IexecOrderFetcher
         let error:           string                 = undefined;
         let brokerOrder:     types.BrokerOrder     = types.toBrokerOrder(raw);
 
+        utils.require(brokerOrder != undefined, 'missing broker order');
+        utils.require(brokerOrder.requestorder != undefined, 'missing requestorder order');
+        utils.require(brokerOrder.apporder != undefined, 'missing apporder order');
+        utils.require(brokerOrder.workerpoolorder != undefined, 'missing workerpool order');
+        //dataset order is optional
+
         let context: string = `[requester:${brokerOrder.requestorder.requester}, ` +
             `app:${brokerOrder.requestorder.app}, ` +
             `workerpool:${brokerOrder.requestorder.workerpool}, ` +
