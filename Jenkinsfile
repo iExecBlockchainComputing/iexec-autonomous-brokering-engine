@@ -1,2 +1,2 @@
-@Library('jenkins-library@master') _
+@Library('global-jenkins-library@feature/external-iexec-oci') _
 buildSimpleDocker(imageprivacy: 'private')
